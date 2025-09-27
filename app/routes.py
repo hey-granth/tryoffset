@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-import models, schema
-from database import SessionLocal
+from . import models, schema
+from .database import SessionLocal
 from hashlib import sha256
 
 
@@ -23,7 +23,7 @@ def get_db():
 @router.post("/records", response_model=schema.RecordResponse)
 def create_record(
     record: schema.CreateRecord, db: Session = Depends(get_db)
-) -> models.Records | None:
+) -> schema.RecordResponse:
     record_id: str = create_id(record)
     db_record: models.Records = models.Records(
         id=record_id,
@@ -41,9 +41,12 @@ def create_record(
     # record already exists, as record is a primary key.
     except IntegrityError:
         db.rollback()
-        return db.query(models.Records).filter(models.Records.id == record_id).first()
+        existing_record = (
+            db.query(models.Records).filter(models.Records.id == record_id).first()
+        )
+        return schema.RecordResponse.from_orm_record(existing_record)
     db.refresh(db_record)
-    return db_record
+    return schema.RecordResponse.from_orm_record(db_record)
 
 
 # generates a unique, deterministic id
@@ -54,15 +57,16 @@ def create_id(record: schema.CreateRecord) -> str:
 
 # GET /records/{id} → Return full record details + all events.
 @router.get("/records/{record_id}", response_model=schema.RecordResponse)
-def get_record(record_id: str, db: Session = Depends(get_db)) -> models.Records | None:
+def get_record(record_id: str, db: Session = Depends(get_db)) -> schema.RecordResponse:
     record: models.Records | None = (
         db.query(models.Records).filter(models.Records.id == record_id).first()
     )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
-    return record
+    return schema.RecordResponse.from_orm_record(record)
 
 
+# POST /records/{id}/retire → Mark a record as “retired” by adding a new event (not updating the original record).
 @router.post("/records/{record_id}/retire")
 def retire_record(record_id: str, db: Session = Depends(get_db)) -> dict[str, str]:
     record: models.Records | None = (

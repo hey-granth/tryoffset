@@ -7,8 +7,8 @@ class EventsSchema(BaseModel):
     timestamp: datetime
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+        from_attributes = True  # to read data even if it's not a dict, e.g., ORM model
+        populate_by_name = True # to read data using field names even if aliases are set
 
 
 class CreateRecord(BaseModel):
@@ -28,8 +28,20 @@ class RecordResponse(CreateRecord):
     vintage: int
     quantity: int
     serial_number: str
-    events: list[EventsSchema]
+    events: list[EventsSchema] = []
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
+        from_attributes = True  # orm_mode is deprecated
+        populate_by_name = True # allow_population_by_field_name is deprecated
+
+    @classmethod
+    def from_orm_record(cls, record):
+        return cls(
+            id=record.id,
+            project_name=record.project_name,
+            registry=record.record_registry,  # Use the field name explicitly
+            vintage=record.vintage,
+            quantity=record.quantity,
+            serial_number=record.serial_number,
+            events=[EventsSchema.model_validate(event, from_attributes=True) for event in record.events]
+        )

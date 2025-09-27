@@ -1,13 +1,14 @@
-from database import Base
+from .database import Base
 from sqlalchemy import Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
+from datetime import datetime
 
 
 class Records(Base):
     __tablename__ = "records"
 
     id: Mapped[str] = mapped_column(
-        String, primary_key=True
+        String, primary_key=True, unique=True
     )  # unique id to ensure no duplicate entries are created
     project_name: Mapped[str] = mapped_column(
         "project_name", String, unique=True, nullable=False
@@ -30,6 +31,8 @@ class Event(Base):
         String, ForeignKey("records.id"), nullable=False
     )
     event_type: Mapped[str] = mapped_column(String, nullable=False)
-    timestamp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now
+    )
 
-    record = relationship("Record", back_populates="events")
+    record = relationship("Records", back_populates="events")
