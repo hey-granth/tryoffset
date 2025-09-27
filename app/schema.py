@@ -13,7 +13,9 @@ class EventsSchema(BaseModel):
 
 class CreateRecord(BaseModel):
     project_name: str
-    record_registry: str = Field(..., alias="registry") # set up an alias because registry is a declared keyword in SQLAlchemy declarative base
+    record_registry: str = Field(
+        ..., alias="registry"
+    )  # set up an alias because registry is a declared keyword in SQLAlchemy declarative base
     vintage: int
     quantity: int
     serial_number: str
