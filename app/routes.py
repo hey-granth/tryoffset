@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from . import models, schema
 from .database import SessionLocal
 from hashlib import sha256
+from datetime import datetime
 
 
 router = APIRouter()
@@ -37,6 +38,16 @@ def create_record(
 
     try:
         db.commit()
+        db.refresh(db_record)
+
+        # Add "created" event for new records
+        created_event = models.Event(
+            record_id=record_id, event_type="created", timestamp=datetime.now()
+        )
+        db.add(created_event)
+        db.commit()
+        db.refresh(db_record)
+
     # if the record already exists, return the existing record. IntegrityError will be raised if the
     # record already exists, as record is a primary key.
     except IntegrityError:
@@ -45,7 +56,7 @@ def create_record(
             db.query(models.Records).filter(models.Records.id == record_id).first()
         )
         return schema.RecordResponse.from_orm_record(existing_record)
-    db.refresh(db_record)
+
     return schema.RecordResponse.from_orm_record(db_record)
 
 
