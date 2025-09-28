@@ -8,7 +8,8 @@ models.Base.metadata.create_all(bind=database.engine)
 origins = [
     "http://localhost",
     "http://localhost:8000",
-    "https://tryoffset.onrender.com"
+    "https://tryoffset.onrender.com",
+    "http://127.0.0.1:8000",
 ]
 
 app = FastAPI()

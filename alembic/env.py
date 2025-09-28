@@ -5,7 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 import sys
-sys.path.append('.')
+
+sys.path.append(".")
 from app.models import Base
 from dotenv import load_dotenv
 from os import getenv
